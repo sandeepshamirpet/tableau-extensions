@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Tenant Balance Dashboard</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/nickthenewbie1/tableau-extension-api-types@release/tableau.extensions.1.latest.min.js"></script>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f7f7f7;color:#222;font-size:13px}
@@ -48,13 +49,14 @@
   .legend{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:8px;font-size:11px;color:#666}
   .legend span{display:flex;align-items:center;gap:4px}
   .dot{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+  .loading{display:flex;justify-content:center;align-items:center;height:300px;font-size:16px;color:#888}
 </style>
 </head>
 <body>
 
 <div class="header">
   <h1>Yardi Tenant Balance — Executive Dashboard</h1>
-  <span id="asof">Camden Homes · Live Data</span>
+  <span id="asof">Camden Homes · Loading...</span>
 </div>
 
 <div class="body">
@@ -144,83 +146,227 @@
 </div>
 
 <script>
-const DATA = [
-["Leticia","Flores","","Current",400],["Darrin","Wade","14 Cypress Point Dr","Current",-424.36],["Hao","Bui","14 Cypress Point Dr","Past",-1099],["Ambera","Mack","22 Elmwood Dr","Current",2000],["Ashley","Ruiz","22 Maple Leaf Dr","Current",1888.9],["Daniel","Torre","33 Road 3550","Past",5216],["Diane","Odom","34 Mustang Dr","Current",2218.9],["Mykiyah","Battiest","35 Mustang Dr","Current",1238.9],["CZ","GS Rental","48 Red Cedar Cir","Current",2199],["Damon","McNew","51 Mustang Dr","Past",15009.2],["Jonathan","Martinez","57 Cherry Blossom Way","Current",1088.9],["Eric","Burgos","58 Redwood Dr","Past",8672.86],["Ashley","Clark","62 Cypress Point Dr","Current",1448.8],["Jennifer","Allen","69 Mustang Dr","Current",-1525],["Brittney","Villanueva","75 Maple Leaf Dr","Current",179.9],["QInwen","Lin","80 Cherry Blossom Way","Current",797.04],["Justin","Smith","101 Springleaf Ln","Current",1869],["Jeremy","Daniel","105 Village Ct","Notice",242],["Cameron","Milhollon","109 Bermuda Place","Current",-2277],["Steven","Thibodeaux","111 University Street","Current",215],["Emily","Hatcher","112 Columbia Street","Current",4737.9],["Paigalynn","Jackson","112 PURDUE ROAD","Current",2666.8],["Oscar","Galan","112 Spring Crest St","Current",235],["Devin","Spurlock","116 Village Ct","Current",480],["Shanequia","Jarvis","117 Village Ct","Current",2650.77],["Jeanne","Gardner-Gusman","118 Harvard Blvd","Current",3678.5],["Alencia","Sims","119 Hamilton","Past",8616.96],["Antonio","Thomas","119 Providence Avenue","Current",255],["James","Lockwood","121 Colgate Avenue","Current",275],["Shawntavia","Coleman","121 Northwestern Avenue","Current",5325.5],["Tomeshiya","Lovett","127 Northwestern Avenue","Current",2878.9],["Rachael","Carpenter","135 Creek Meadow Dr","Past",5033.81],["Michael","Bessette","137 Creek Meadow Dr","Past",4957.8],["Keitha","Billy","138 Mustang Dr","Current",3959.6],["Javay","Dawn","142 BOWLING GREEN AVENUE","Current",2435.8],["Olandra","Davis","143 Lawndale Ln","Current",179.9],["Jennifer","Poe","145 Creek Meadow Dr","Current",242.2],["Derrick","Garcia","148 NORTHWESTERN AVENUE","Eviction",16898.26],["Cameron","Dallas","148 XAVIER AVENUE","Current",5004.97],["Caleb","Hebb","151 Wake Forest Avenue","Current",-2689],["Samuel","Hawkins","151 Xavier Avenue","Current",2923.1],["Erika","Epps","152 WAKE FOREST AVENUE","Current",2661.9],["Carolyn","Tanner","154 Northwestern Avenue","Past",10387.81],["Jonathan","Walls","157 Mustang Dr","Current",189.9],["Jamie","Leflore","157 Wake Forest Avenue","Current",3091],["Jakoria","Payne","166 Xavier Avenue","Current",3043.9],["Alyssa","Alvarado","166 Yale Avenue","Current",-12595],["Porsha","Dunn","169 COLGATE AVENUE","Current",444.9],["Kermit","Gray Jr","169 WAKE FOREST AVENUE","Past",3208.9],["Larry","Bradley","169 Xavier Avenue","Current",3208.9],["Tonyela","Singleton","169 Yale Avenue","Current",3045],["Ivory","White","172 Northwestern Avenue","Current",2269],["Barbara","Jobe","175 Wake Forest Avenue","Past",9066.12],["Maegan","Wirries","176 Mustang Dr","Current",2895.8],["Abreanna","Willis","176 WAKE FOREST AVENUE","Current",2629.9],["Melissa","Ocampo","181 COLGATE AVENUE","Current",3008.9],["LaChristopher","Carroll","184 BOWLING GREEN AVENUE","Current",3320],["Cassondra","Dean","184 Yale Avenue","Current",2988.9],["Teresa","Lee","187 XAVIER AVENUE","Current",2988.9],["Deeanna","Taylor","189 Mustang Dr","Current",1887.24],["George","Siegfried","190 Mustang Dr","Current",1719],["Aloysious","Devones","190 YALE AVENUE","Current",4398.7],["Cendrick","Henderson","193 Northwestern Avenue","Eviction",12114.4],["Pedro","Godoy","193 Wake Forest Avenue","Current",3537.6],["Don","Miles","196 BOWLING GREEN AVENUE","Current",2815.1],["Seli","Cocker","204 Mina Street","Current",5840],["Lynn","Houston","205 MIDDLEFIELD DRIVE","Current",3056],["Julian","Lewis","205 Mina Street","Past",7567.83],["Ryan","Tennison","206 Mina Street","Current",6112],["Toccara","Stone","206 RUTGERS AVENUE","Current",3196.92],["Ryan","Washington","207 Mina Street","Eviction",8570.66],["Chantell","Lewis","210 Mina Street","Current",9587.8],["Frances","Agosto","212 Rutgers Avenue","Current",3195],["David","Empy","214 Stefani Drive","Current",6623.1],["Dawnisha","Carter","215 DOUGLAS STREET","Current",2988.9],["Terrance","Mackyeon","215 Mina Street","Current",3059.71],["Antonia","Diggs","216 Jardim Ln","Current",2918.4],["Gayrelyn","Freeney-Miller","216 Mina Street","Current",1855.7],["Anjanette","Sela","216 Watson Street","Current",1614.8],["Christine","Landon","217 Brook Moor Ln","Current",1904.82],["ECNS","Consultants PLLC","217 Jardim Ln","Current",3200.55],["Melissa","Jordan","218 Rutgers Avenue","Eviction",8692.92],["Asia","Jackson","218 WATSON STREET","Current",3007.6],["Craig","Gordon","219 COTTONVIEW LANE","Current",3199.8],["Cheryl","Boudrey","220 Mina Street","Current",4033.3],["Cassie","Figures","221 COTTONVIEW","Current",2782.5],["Derik","Julian","222 Royal Oak Dr","Current",2566.9],["Franchot","Tisdale","222 Watson Street","Current",3010.9],["LaQuintell","Wright","225 MINA STREET","Current",3353],["Corey","Jackson","227 MINA STREET","Eviction",19705.65],["Eduardo","Gutierrez","228 Road 5025","Notice",4007.9],["Antonio","Keeton","229 MIDDLEFIELD DRIVE","Current",2605],["Markeda","Price","230 Rutgers Avenue","Current",2745],["Alicia","Jackson-White","233 Cottonview Lane","Current",2962.2],["Malcolm","Mayfield","235 Cottonview Lane","Current",2729.8],["Latarcha","June","247 MIDDLEFIELD DRIVE","Current",3327.8],["Dana","Lee","273 Grove Way","Current",1741.9],["Jala","Brown","274 Creighton Avenue","Current",2768.9],["Katrina","Parks","279 Rutgers Avenue","Current",1857.8],["Geoffrey","Haakantu","300 PURDUE ROAD","Current",2599.9],["Charles","Washington","302 HITCHING POST ROAD","Current",3045],["Priscilla","Morales","303 Stefani Drive","Current",3153],["Carlida","Clewis","306 STEFANI DRIVE","Current",3100],["Adam","Peterson","308 PURDUE ROAD","Current",2298.9],["Ashlee","Hutchinson","312 PURDUE ROAD","Current",2438.9],["Audrina","Blount","324 GINGER AVENUE","Past",2745.4],["Shirley","Autry","367 Grove Way","Current",1178.8],["Destiny","Bravo","416 PURDUE ROAD","Current",2898.9],["Samuel","Ude","428 PURDUE ROAD","Past",2519],["Evelyn","Roig","432 PURDUE ROAD","Eviction",9424.4],["Timothy","Ditonto","436 PURDUE ROAD","Eviction",17028.75],["LaToya","Finley","501 Tiffany Ln","Current",2641],["Meadowridge","LLC","503 Tom Lane","Current",2799],["Angela","Moore","504 Season St","Current",5355],["Chanequa","Washington","507 Cottage Row","Past",3528.05],["Tawanna","King","509 Grico Rd","Current",2878.9],["Lakesha","Wade","538 Tom Ln","Eviction",9094.75],["Veronica","Torres","516 Cottonview Drive","Past",7814.97],["Christopher","Thomas","520 Season St","Current",2664.4],["Elvin","Bell","520 Tom Ln","Current",2918],["Mario","Balbuena","521 Grico Rd","Current",3440.12],["Deborah","Scott","524 Cottonview Drive","Current",4673],["Yessenia","Abrego","533 Road 5138","Eviction",10951.44],["Jerry","Apodaca","601 Tiffany Ln","Current",5316.8],["Marvin","Fergurson","603 Road 5138","Current",2583.6],["Ebony","Royster","607 Spring Rain Rd","Past",7688.25],["Jakira","Mason","612 East Jefferson Ave","Current",2011.4],["Nora","Delgado","614 East Baltimore Ave","Current",2220],["Dorothy","Gallagher","619 Cottage Row","Current",1928.8],["Zackery","Compton","619 Spring Rain Rd","Past",2431.65],["Shamon","Jones","620 East Baltimore Ave","Current",2026],["Martin","Guerrero","623 Cottage Row","Current",4115.4],["Shkendrit","Krasniqi","625 Spring Rain Rd","Current",1998.9],["Johnnetta","Rogers","626 N Wofford Street","Current",1397.5],["Kenneth","Kinch","629 Spring Rain Rd","Past",21001.15],["Tiffany","Williams","632 Camden Drive","Current",2769.9],["Brandie","Johnson","632 Lakefield Dr","Current",6400.7],["Vivian","Journey","648 Camden Drive","Current",3032.01],["Kelly","Kalkwarf","651 Pinnacle Dr","Current",2200.8],["Jose","Chavez","671 Pinnacle Dr","Current",4235.9],["Erick","Alvarez","674 Edd Road","Current",2845],["James","Nobles","675 Pinnacle Dr","Current",3852.6],["Johnny","Robinson","687 Pinnacle Dr","Eviction",12036.76],["Shirley","Brown","704 Basin Court","Current",3261.49],["Isela","Hernandez","705 Cyrus Street","Current",3025],["Cassandra","Davis","710 Edd Road","Current",2385],["Rafael","Fernandez","712 N Wofford Street","Notice",155.2],["Quenton","Vanderford","718 N Wofford Street","Current",2600.6],["Sandra","Buenrostro","720 Basin Court","Current",2768.9],["Rene","Garcia","793 Road 5109","Current",7812.55],["Melvin","Escobar","874 Road 5015","Past",6885.7],["Sakinah","Reese","1108 Glenhaven Dr","Past",16535.64],["Mason","Kimbrough","1208 Marsha Lane","Current",1402.73],["Terrance","Finn Jr","1212 Marsha Lane","Current",2511.5],["Dianna","Cook","1422 Springbrook Dr","Current",279.9],["Reagan","Porter","1427 Cedarhurst Dr","Current",5268.4],["Chassie","Hall","1434 Springbrook Dr","Current",4227.9],["Andrea","Brown","1434 Waterview Dr","Past",14404.7],["Jarmeshia","Kates","1438 Lakebrook Dr","Current",4059.7],["Sonya","Abron","1438 Springbrook Dr","Past",7075.91],["Arianna","Jaimes","1451 Cedarhurst Dr","Current",2598.9],["Cherie","Jenkins","1451 Waterview Dr","Current",2988.9],["Sterling","Bigham","1454 Lakebrook Dr","Current",2800],["Marian","Elkins","1455 Lakebrook Dr","Current",7484],["LaRonda","Wallace","1455 Waterview Dr","Current",2715],["Kimmesha","Polk","1459 Lakebrook Dr","Current",2495],["Brian","Warren","1459 Ponderosa Dr","Current",2676.7],["Karen","Bridgewater","1463 Cedarhurst Dr","Current",2767.8],["Jennifer","Day","1463 Streamside Dr","Current",2765],["Alecia","Wiley","1466 Waterview DR","Current",3817.7],["Linda","Moore","1511 Lakebrook Drive","Current",1547.5],["Scott","Hampton","1549 Woodlake Drive","Eviction",9407.96],["Francisco","Ortiz","1702 Fawn Creek Dr","Current",2748.43],["Katrina","Longeway","1709 Crimson Ave","Current",2428.9],["Anastacio","Gonzalez","1905 Temper Ln","Current",5206.7],["Berlinda","Johnson","1911 Passion Dr","Current",5990.82],["Quawanna","Small","1963 Education Way","Current",2605],["Vincent","Lane","2002 Peppermint Ln","Current",2813.9],["Erika","Reed","2008 Yale Street","Current",2385],["Keyona","Fields","2014 Princeton Avenue","Current",2381.7],["Jonathan","Goodson","2015 Clay Street","Past",12756.43],["Rosalba","Rodriguez","2016 Princeton Avenue","Current",3259.9],["Benny","Sneed","2021 Clay Street","Current",2348.9],["Kristi","Teichelman","2023 Clay Street","Current",2536.6],["Maeceo","Nettles","2031 Long Island Dr","Current",2898.9],["Angelica","Aguila","2050 Peppermint Ln","Eviction",14370.65],["Eyvi","Valadez","2073 Peppermint Ln","Current",3385],["Edgar","Escobar","2074 Peppermint Ln","Current",2882.2],["Domanic","Hubbard","2081 Peppermint Ln","Current",2276.3],["Chrisette","Weaver","2105 CINNAMON WAY","Current",2778.9],["DeJah","Cephas","2116 Peppermint Ln","Eviction",6568.34],["Shelby","Pope","2121 NUTMEG WAY","Current",2438.9],["James","Braden","2125 NUTMEG WAY","Current",2768.9],["Martin","Silva","2148 Peppermint Ln","Notice",3097.9],["Jose","Alday","2151 Long Island Dr","Current",4035.3],["Pamela","Holmes","2175 Long Island Dr","Current",2456.5],["Patricia","Cisneros","2320 Brandon Street","Current",2348.9],["Adriana","Stark","2324 Brandon Street","Current",1928.9],["Christi","Lane","2324 Camryn Lane","Current",2004],["Mahogany","Curry","2331 Camryn Lane","Current",2370],["Wendy","Jarvis","2333 Camryn Lane","Current",2108.8],["Mark","Driskell","2334 Brandon Street","Current",1963.9],["Ashlynn","Stewart","2329 Camryn Lane","Current",1824],["Colton","Dyer","2526 Jax Street","Current",1983.9],["Madison","Goins","2527 Jax Street","Current",1834],["Jill","Hopper","2531 Jax Street","Current",6127.4],["Joshua","Bell","2532 Jax Street","Current",3020],["Kody","Kent","2539 Jax Street","Past",3945],["Grace","Wallace","2543 Jax Street","Current",2284.6],["Russell","Aaron","2544 Jax Street","Past",5395],["Christopher","Korbe","2732 William Street","Current",2331.9],["Roxanne","Mulvaney","2746 William Street","Eviction",10825.86],["Shante","Bailey","2801 Aiden Lane","Current",4926.8],["Lacraigdrick","Erwin","2804 Tenneha Ave","Current",4070.5],["Tiffani","Rodriguez","2824 Tenneha Ave","Current",1445.35],["Sherretha","Burdine","2840 Tenneha Ave","Current",2163.9],["Ramon","Medrano","2848 Mesquite Rd","Current",3098.8],["Zachary","Lucius","2874 Tenneha Ave","Past",11723.19],["Tyvaski","Burton","2908 Aiden Lane","Current",2398.9],["Joss","Murphy","2909 Emma Lane","Current",2218.9],["Oriana","Flores","2928 Aiden Lane","Past",5057.1],["Ashuan","Mitchell-Oatis","2948 Aiden Lane","Past",6721.62],["Jazzalyn","Davis","2949 Aiden Lane","Current",2572.38],["Ashlee","Thompson","2936 Emma Lane","Past",7797.51],["Ethan","Merrill","2936 Emma Lane","Current",1821.03],["Robert","Fernandez","2962 Emma Lane","Current",1950.9],["Desiree","Rivera","2957 Aiden Lane","Past",6188.51],["Lora","Dixon","2957 Aiden Lane","Current",2399],["David","Dycus","2957 Emma Lane","Current",2548.9],["Breanna","Forge","2973 Tenneha Ave","Eviction",11280.16],["Roderick","Taylor","3083 Tenneha Ave","Current",2550],["Leyla","Mendoza","3406 Road 5702","Past",3117.8],["Sherlee","Hayden","3453 Road 5702","Current",1796.5],["David","Guzman","3469 Road 5702","Current",3177.7],["Maria","Molina","3502 PECAN ST","Current",2131.9],["Carmone","McLemore","3516 Macquarie Dr","Current",3807.4],["Paij","Montgomery","3529 Macquarie Dr","Past",2365.99],["Kayla","Gebhardt","3560 Emu Ridge","Current",2991.8],["Alexandra","Villeda","3611 Belconnen Rd","Current",3046.6],["Paige","Hall","3626 Elise Way","Current",2490],["Evelyn","Bradford","3635 Elise Way","Current",2663.9],["Cecil","Patterson","3638 Elise Way","Current",3785.16],["Juan","Solis","3641 Belconnen Rd","Current",2489.1],["Martin","Campuzano","3650 Elise Way","Past",2525],["Jana","Thompson","4404 Braddon Dr","Current",2507.8],["Craig","Nolley III","4408 Braddon Dr","Past",9639.49],["Francisco","Aguilar","4424 Braddon Dr","Current",2991.8],["Crystal","Kelley","4428 Braddon Dr","Current",2966.69],["Jarvis","Jones","4433 Braddon Dr","Current",6031.3],["Edward","McCullar","4436 Braddon Dr","Current",2320],["Jennifer","Ronquillo","4444 Braddon Dr","Current",2654.9],["Ofelia","Gamez","4506 Foxton Ln","Current",2558.9],["Esmeralda","Theodorakis","4508 Giralang Ln","Current",5180.7],["John","Jackson","4510 Foxton Ln","Past",612.12],["Christie","Evans","4512 Braddon Dr","Current",2709.2],["Collette","Smith","4513 Braddon Dr","Current",3628.8],["Christian","Brunt","4515 Aranda Rd","Eviction",11915.9],["Derric","Hicks","4516 Turnbull Dr","Current",2615],["Noel","Mejia","4524 Turnbull Dr","Current",3453.9],["Amanda","Antunez","4533 Turnbull Dr","Current",1732.6],["Jose","Giral","4544 Turnbull Dr","Past",1804.28],["Kelsey","Kaiser","4548 Turnbull Dr","Eviction",13710.66],["Luis","Davila","4552 Turnbull Dr","Current",2799.8],["Cursila","Longoria","4571 Foxton Ln","Current",7761.7],["Lauren","Morgan","6017 Road 5503","Current",1832.8],["Duane","Roberts","6533 Road 5503","Current",3197.8],["Alexis","Morley","6577 Road 5503","Current",3893.5],["Shannon","Velasquez","6605 Road 5503","Current",1397.4],["Bonnie","Morgan","6849 Road 5503","Past",1833.9],["Phenice","Lofton","6993 Road 5503","Current",836.92],["Juan","Mendez","9148 St Barts","Current",2275],["Manuel","Garcia","10005 Spice Ln","Eviction",7578.6],["Johnny","Diaz","10012 Spearmint Ln","Past",8229.81],["Hugo","Pina","10013 Spice Ln","Current",2270],["Devonna","Perro","10019 Spearmint Ln","Current",1055],["Brenda","Brown","10021 Spice Ln","Current",2841.65],["Iris","Andrade","10030 Spice Ln","Current",2769.8],["Alnita","McCowin","10031 Melon Ave","Current",2765.7],["Marcus","Sterns","10040 Melon Ave","Past",5985.37],["Jacqueline","Hernandez","10041 Manzanilla Ave","Current",3053.8],["Faith","Roberts","10046 Spice Ln","Current",2154.9],["Jose","Robles","10049 Manzanilla Ave","Current",8558.9],["Eliza","Bigham","10055 Melon Ave","Current",3035.5],["Annie","Lawson","10124 Spearmint Ln","Past",5964.87],["Lafayette","Gilliam","10130 Melon Ave","Current",4093.5],["Megan","Lanthrip","10136 Manzanilla Ave","Eviction",14459.8],["Alexia","McMillian","10136 Spice Ln","Current",5446.5],["Jayson","Sierra","10146 Melon Ave","Past",5073.05],["Lakendria","King","10157 Melon Ave","Current",5427.8],["Shantoya","Cohens","10176 Manzanilla Ave","Current",60802.3],["Randi","Gore","10178 Melon Ave","Past",6305.64],["Lizbeth","Fuentes","10222 Spearmint Ln","Past",5978.29],["Dustin","Gilbert","10930 Meadow Creek Drive","Past",5820],["Stephanie","Craven","14425 Trough Lane","Current",2526.9],["Angelica","Pesina","14505 Gorge Drive","Current",2379],["David","Pedraza","14506 Gorge Drive","Current",2876.2],["Carlos","Cruz","14511 Trough Lane","Current",3455],["Darion","Jackson","14545 Gorge Drive","Current",3017.7],["Elizabeth","Velazco","14546 Gorge Drive","Current",2385],["Salvador","Gonzalez","14554 Gorge Drive","Current",2634.82],["Ebony","Oliver","14570 Gorge Drive","Eviction",5237],["Ramon","Aguilar III","14578 Gorge Drive","Current",2878.9],["Adilene","Viera","14602 Gully Place","Past",4875.65],["Dawlton","Young","17967 County Road 4001","Current",9438],["Demetrise","Wicks","18489 County Road 4001","Current",1809.29],["Ryan","Busby","18513 County Road 4001","Current",1888.9],["Deauna","Henderson","18627 County Road 4001","Current",1859],["Demetria","Miles","18835 County Road 4001","Current",1943.9],["Vantonette","Jefferson","18859 County Road 4001","Current",1943.9],["Michael","Nelson","18883 County Road 4001","Current",1929.8],["Dylan","Day","18975 County Road 4001","Current",1794]
-];
+/* ── Global state ── */
+let rows = [];
+let bar, donut;
+const fmt = v => (v < 0 ? '-$' : '$') + Math.abs(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const SC = { Current: '#378ADD', Eviction: '#E24B4A', Notice: '#EF9F27', Past: '#888780', Canceled: '#D4537E', Future: '#97C459' };
+const sum = arr => arr.reduce((s, r) => s + r.bal, 0);
+const $k = v => '$' + Math.round(v).toLocaleString();
 
-const rows = DATA.map(r=>({name:r[0]+' '+r[1],addr:r[2],status:r[3],bal:r[4]}));
-const fmt = v=>(v<0?'-$':'$')+Math.abs(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
-const SC = {Current:'#378ADD',Eviction:'#E24B4A',Notice:'#EF9F27',Past:'#888780',Canceled:'#D4537E',Future:'#97C459'};
+/* ── Column name matching (case-insensitive, flexible) ── */
+function findColumn(columns, candidates) {
+  for (const c of candidates) {
+    const found = columns.find(col => col.fieldName.toLowerCase().replace(/[^a-z0-9]/g, '').includes(c.toLowerCase().replace(/[^a-z0-9]/g, '')));
+    if (found) return found.fieldName;
+  }
+  return null;
+}
 
-const pos = rows.filter(r=>r.bal>0);
-const cur = pos.filter(r=>r.status==='Current');
-const ev = pos.filter(r=>r.status==='Eviction');
-const nt = pos.filter(r=>r.status==='Notice');
-const ps = pos.filter(r=>r.status==='Past');
+/* ── Parse balance value from Tableau (handles comma-formatted strings) ── */
+function parseBalance(val) {
+  if (val === null || val === undefined || val === '' || val === '%null%') return 0;
+  const str = String(val).replace(/[$,]/g, '');
+  const num = parseFloat(str);
+  return isNaN(num) ? 0 : num;
+}
 
-const sum = arr=>arr.reduce((s,r)=>s+r.bal,0);
-const $k = v=>'$'+Math.round(v).toLocaleString();
+/* ── Read data from Tableau worksheet ── */
+async function loadDataFromTableau() {
+  const dashboard = tableau.extensions.dashboardContent.dashboard;
+  const worksheets = dashboard.worksheets;
 
-document.getElementById('kCurrent').textContent=$k(sum(cur));
-document.getElementById('kCurrentSub').textContent=cur.length+' current tenants with balance';
-document.getElementById('kTotal').textContent=$k(sum(pos));
-document.getElementById('kEviction').textContent=$k(sum(ev));
-document.getElementById('kEvSub').textContent=ev.length+' tenants in eviction';
-document.getElementById('kNotice').textContent=$k(sum(nt));
-document.getElementById('kNoticeSub').textContent=nt.length+' tenants on notice';
-document.getElementById('kPast').textContent=$k(sum(ps));
-document.getElementById('kPastSub').textContent=ps.length+' past tenants';
-document.getElementById('kAvg').textContent='$'+Math.round(sum(pos)/pos.length).toLocaleString();
-document.getElementById('asof').textContent='Camden Homes · '+new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+  if (worksheets.length === 0) {
+    console.error('No worksheets found on the dashboard.');
+    return;
+  }
 
-const top15=[...pos].sort((a,b)=>b.bal-a.bal).slice(0,15);
-let bar,donut;
+  // Try to find the worksheet with tenant data (use first worksheet, or find by data columns)
+  let worksheet = worksheets[0];
+  for (const ws of worksheets) {
+    try {
+      const summary = await ws.getSummaryDataAsync();
+      const colNames = summary.columns.map(c => c.fieldName.toLowerCase());
+      if (colNames.some(n => n.includes('firstname') || n.includes('first')) &&
+          colNames.some(n => n.includes('balance') || n.includes('bal'))) {
+        worksheet = ws;
+        break;
+      }
+    } catch (e) { /* skip */ }
+  }
 
-function buildCharts(){
-  if(bar) bar.destroy();
-  bar=new Chart(document.getElementById('barChart'),{
-    type:'bar',
-    data:{labels:top15.map(r=>r.name.length>18?r.name.slice(0,17)+'…':r.name),
-      datasets:[{data:top15.map(r=>Math.round(r.bal)),backgroundColor:top15.map(r=>SC[r.status]||'#888'),borderRadius:3}]},
-    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>' $'+ctx.raw.toLocaleString()+' ('+top15[ctx.dataIndex].status+')'}}},
-      scales:{x:{grid:{color:'rgba(0,0,0,0.05)'},ticks:{callback:v=>'$'+Math.round(v/1000)+'k',font:{size:10}}},y:{grid:{display:false},ticks:{font:{size:10}}}}}
+  console.log('Using worksheet:', worksheet.name);
+
+  // Get underlying data for all records
+  let dataTable;
+  try {
+    dataTable = await worksheet.getSummaryDataAsync({ maxRows: 0 });
+  } catch (e) {
+    console.error('Error getting summary data:', e);
+    try {
+      dataTable = await worksheet.getUnderlyingTablesAsync();
+      if (dataTable.length > 0) {
+        dataTable = await worksheet.getUnderlyingTableDataAsync(dataTable[0].id, { maxRows: 0 });
+      }
+    } catch (e2) {
+      console.error('Error getting underlying data:', e2);
+      return;
+    }
+  }
+
+  const columns = dataTable.columns;
+  console.log('Columns found:', columns.map(c => c.fieldName));
+
+  // Map columns flexibly
+  const firstNameCol = findColumn(columns, ['firstname', 'first_name', 'first name']);
+  const lastNameCol = findColumn(columns, ['lastname', 'last_name', 'last name']);
+  const addressCol = findColumn(columns, ['Property_street__C', 'property_street', 'address', 'street']);
+  const statusCol = findColumn(columns, ['status', 'tenant_status', 'tenantstatus']);
+  const balanceCol = findColumn(columns, ['balance', 'bal', 'tenant_balance', 'amount']);
+
+  console.log('Mapped columns:', { firstNameCol, lastNameCol, addressCol, statusCol, balanceCol });
+
+  if (!firstNameCol || !balanceCol) {
+    console.error('Could not find required columns (firstname, balance)');
+    document.getElementById('asof').textContent = 'Error: Could not map data columns';
+    return;
+  }
+
+  // Build column index map
+  const colIndex = {};
+  columns.forEach((col, i) => { colIndex[col.fieldName] = i; });
+
+  // Parse rows
+  rows = dataTable.data.map(row => {
+    const firstName = firstNameCol ? (row[colIndex[firstNameCol]].formattedValue || '') : '';
+    const lastName = lastNameCol ? (row[colIndex[lastNameCol]].formattedValue || '') : '';
+    const address = addressCol ? (row[colIndex[addressCol]].formattedValue || '') : '';
+    const status = statusCol ? (row[colIndex[statusCol]].formattedValue || '') : '';
+    const balance = balanceCol ? parseBalance(row[colIndex[balanceCol]].value || row[colIndex[balanceCol]].formattedValue) : 0;
+
+    return {
+      name: (firstName + ' ' + lastName).trim(),
+      addr: address === '%null%' ? '' : address,
+      status: status,
+      bal: balance
+    };
   });
-  const st={};pos.forEach(r=>{st[r.status]=(st[r.status]||0)+r.bal;});
-  const sk=Object.keys(st).sort((a,b)=>st[b]-st[a]);
-  if(donut) donut.destroy();
-  donut=new Chart(document.getElementById('donutChart'),{
-    type:'doughnut',
-    data:{labels:sk.map(k=>k+' ($'+Math.round(st[k]/1000)+'k)'),
-      datasets:[{data:sk.map(k=>Math.round(st[k])),backgroundColor:sk.map(k=>SC[k]||'#888'),borderWidth:0,hoverOffset:4}]},
-    options:{responsive:true,maintainAspectRatio:false,cutout:'55%',
-      plugins:{legend:{display:true,position:'bottom',labels:{font:{size:11},padding:8,boxWidth:10,boxHeight:10}},
-        tooltip:{callbacks:{label:ctx=>' $'+ctx.raw.toLocaleString()}}}}
+
+  console.log('Loaded', rows.length, 'rows from Tableau');
+  updateDashboard();
+}
+
+/* ── Update all dashboard elements ── */
+function updateDashboard() {
+  const pos = rows.filter(r => r.bal > 0);
+  const cur = pos.filter(r => r.status === 'Current');
+  const ev = pos.filter(r => r.status === 'Eviction');
+  const nt = pos.filter(r => r.status === 'Notice');
+  const ps = pos.filter(r => r.status === 'Past');
+
+  document.getElementById('kCurrent').textContent = $k(sum(cur));
+  document.getElementById('kCurrentSub').textContent = cur.length + ' current tenants with balance';
+  document.getElementById('kTotal').textContent = $k(sum(pos));
+  document.getElementById('kEviction').textContent = $k(sum(ev));
+  document.getElementById('kEvSub').textContent = ev.length + ' tenants in eviction';
+  document.getElementById('kNotice').textContent = $k(sum(nt));
+  document.getElementById('kNoticeSub').textContent = nt.length + ' tenants on notice';
+  document.getElementById('kPast').textContent = $k(sum(ps));
+  document.getElementById('kPastSub').textContent = ps.length + ' past tenants';
+  document.getElementById('kAvg').textContent = pos.length > 0 ? '$' + Math.round(sum(pos) / pos.length).toLocaleString() : '$0';
+  document.getElementById('asof').textContent = 'Camden Homes · ' + new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + ' · Live Data';
+
+  buildCharts(pos);
+  render();
+}
+
+/* ── Charts ── */
+function buildCharts(pos) {
+  const top15 = [...pos].sort((a, b) => b.bal - a.bal).slice(0, 15);
+
+  if (bar) bar.destroy();
+  bar = new Chart(document.getElementById('barChart'), {
+    type: 'bar',
+    data: {
+      labels: top15.map(r => r.name.length > 18 ? r.name.slice(0, 17) + '\u2026' : r.name),
+      datasets: [{ data: top15.map(r => Math.round(r.bal)), backgroundColor: top15.map(r => SC[r.status] || '#888'), borderRadius: 3 }]
+    },
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ' $' + ctx.raw.toLocaleString() + ' (' + top15[ctx.dataIndex].status + ')' } } },
+      scales: { x: { grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { callback: v => '$' + Math.round(v / 1000) + 'k', font: { size: 10 } } }, y: { grid: { display: false }, ticks: { font: { size: 10 } } } }
+    }
+  });
+
+  const st = {};
+  pos.forEach(r => { st[r.status] = (st[r.status] || 0) + r.bal; });
+  const sk = Object.keys(st).sort((a, b) => st[b] - st[a]);
+
+  if (donut) donut.destroy();
+  donut = new Chart(document.getElementById('donutChart'), {
+    type: 'doughnut',
+    data: {
+      labels: sk.map(k => k + ' ($' + Math.round(st[k] / 1000) + 'k)'),
+      datasets: [{ data: sk.map(k => Math.round(st[k])), backgroundColor: sk.map(k => SC[k] || '#888'), borderWidth: 0, hoverOffset: 4 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: '55%',
+      plugins: {
+        legend: { display: true, position: 'bottom', labels: { font: { size: 11 }, padding: 8, boxWidth: 10, boxHeight: 10 } },
+        tooltip: { callbacks: { label: ctx => ' $' + ctx.raw.toLocaleString() } }
+      }
+    }
   });
 }
 
-function render(){
-  const s=document.getElementById('srch').value.toLowerCase();
-  const sf=document.getElementById('statFilter').value;
-  const bf=document.getElementById('balFilter').value;
-  let d=rows.filter(r=>{
-    if(bf==='pos'&&r.bal<=0)return false;
-    if(bf==='neg'&&r.bal>=0)return false;
-    if(sf!=='all'&&r.status!==sf)return false;
-    if(s&&!r.name.toLowerCase().includes(s)&&!r.addr.toLowerCase().includes(s))return false;
+/* ── Table rendering with filters ── */
+function render() {
+  const s = document.getElementById('srch').value.toLowerCase();
+  const sf = document.getElementById('statFilter').value;
+  const bf = document.getElementById('balFilter').value;
+  let d = rows.filter(r => {
+    if (bf === 'pos' && r.bal <= 0) return false;
+    if (bf === 'neg' && r.bal >= 0) return false;
+    if (sf !== 'all' && r.status !== sf) return false;
+    if (s && !r.name.toLowerCase().includes(s) && !r.addr.toLowerCase().includes(s)) return false;
     return true;
-  }).sort((a,b)=>b.bal-a.bal);
-  const sh=d.slice(0,300);
-  document.getElementById('tbody').innerHTML=sh.map(r=>`<tr>
+  }).sort((a, b) => b.bal - a.bal);
+  const sh = d.slice(0, 300);
+  document.getElementById('tbody').innerHTML = sh.map(r => `<tr>
     <td style="font-weight:600">${r.name}</td>
-    <td style="color:#777">${r.addr||'—'}</td>
+    <td style="color:#777">${r.addr || '\u2014'}</td>
     <td><span class="badge s-${r.status}">${r.status}</span></td>
     <td class="r" style="font-weight:600">${fmt(r.bal)}</td>
   </tr>`).join('');
-  document.getElementById('tfoot').textContent=sh.length<d.length?`Showing ${sh.length} of ${d.length} results`:`${d.length} tenants`;
+  document.getElementById('tfoot').textContent = sh.length < d.length ? `Showing ${sh.length} of ${d.length} results` : `${d.length} tenants`;
 }
 
-buildCharts();render();
+/* ── Initialize Tableau Extension ── */
+(async function () {
+  try {
+    await tableau.extensions.initializeAsync();
+    console.log('Tableau Extensions API initialized');
+
+    // Load data initially
+    await loadDataFromTableau();
+
+    // Listen for filter changes to auto-refresh
+    const dashboard = tableau.extensions.dashboardContent.dashboard;
+    for (const ws of dashboard.worksheets) {
+      ws.addEventListener(tableau.TableauEventType.FilterChanged, async () => {
+        console.log('Filter changed, reloading data...');
+        await loadDataFromTableau();
+      });
+      ws.addEventListener(tableau.TableauEventType.MarkSelectionChanged, async () => {
+        console.log('Selection changed, reloading data...');
+        await loadDataFromTableau();
+      });
+    }
+  } catch (err) {
+    console.error('Failed to initialize Tableau Extensions API:', err);
+    document.getElementById('asof').textContent = 'Error: ' + err.message;
+  }
+})();
 </script>
 </body>
 </html>
