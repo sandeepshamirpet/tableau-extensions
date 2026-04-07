@@ -181,35 +181,46 @@ async function loadDataFromTableau() {
     return;
   }
 
-  // Try to find the worksheet with tenant data (use first worksheet, or find by data columns)
+  // Try to find the worksheet with tenant data
   let worksheet = worksheets[0];
   for (const ws of worksheets) {
     try {
-      const summary = await ws.getSummaryDataAsync();
-      const colNames = summary.columns.map(c => c.fieldName.toLowerCase());
-      if (colNames.some(n => n.includes('firstname') || n.includes('first')) &&
-          colNames.some(n => n.includes('balance') || n.includes('bal'))) {
-        worksheet = ws;
-        break;
+      const tables = await ws.getUnderlyingTablesAsync();
+      if (tables.length > 0) {
+        const sample = await ws.getUnderlyingTableDataAsync(tables[0].id, { maxRows: 1, includeAllColumns: true });
+        const colNames = sample.columns.map(c => c.fieldName.toLowerCase());
+        if (colNames.some(n => n.includes('firstname') || n.includes('first')) &&
+            colNames.some(n => n.includes('balance') || n.includes('bal'))) {
+          worksheet = ws;
+          break;
+        }
       }
     } catch (e) { /* skip */ }
   }
 
   console.log('Using worksheet:', worksheet.name);
 
-  // Get underlying data for all records
+  // Get ALL underlying data (not just visible summary rows)
   let dataTable;
   try {
-    dataTable = await worksheet.getSummaryDataAsync({ maxRows: 0 });
+    const tables = await worksheet.getUnderlyingTablesAsync();
+    console.log('Underlying tables:', tables.map(t => t.id));
+    if (tables.length > 0) {
+      dataTable = await worksheet.getUnderlyingTableDataAsync(tables[0].id, { maxRows: 0, includeAllColumns: true });
+      console.log('Got underlying data:', dataTable.data.length, 'rows');
+    }
   } catch (e) {
-    console.error('Error getting summary data:', e);
+    console.warn('Underlying data not available, falling back to summary:', e.message);
+  }
+
+  // Fallback to summary data if underlying data failed
+  if (!dataTable || !dataTable.data || dataTable.data.length === 0) {
     try {
-      dataTable = await worksheet.getUnderlyingTablesAsync();
-      if (dataTable.length > 0) {
-        dataTable = await worksheet.getUnderlyingTableDataAsync(dataTable[0].id, { maxRows: 0 });
-      }
+      dataTable = await worksheet.getSummaryDataAsync({ maxRows: 10000 });
+      console.log('Got summary data:', dataTable.data.length, 'rows');
     } catch (e2) {
-      console.error('Error getting underlying data:', e2);
+      console.error('Error getting any data:', e2);
+      document.getElementById('asof').textContent = 'Error: Could not load data';
       return;
     }
   }
