@@ -1,0 +1,68 @@
+name: Refresh Tableau Data
+
+on:
+  schedule:
+    - cron: '0 6,12,18,0 * * *'  # Every 6 hours (UTC)
+  workflow_dispatch:  # Manual trigger
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Sign in to Tableau and fetch data
+        run: |
+          # Authenticate
+          TOKEN=$(curl -s -X POST "https://us-east-1.online.tableau.com/api/3.22/auth/signin" \
+            -H "Content-Type: application/json" \
+            -H "Accept: application/json" \
+            -d "{\"credentials\":{\"personalAccessTokenName\":\"${{ secrets.TABLEAU_PAT_NAME }}\",\"personalAccessTokenSecret\":\"${{ secrets.TABLEAU_PAT_SECRET }}\",\"site\":{\"contentUrl\":\"camdenhomes\"}}}" \
+            | python3 -c "import sys,json; print(json.load(sys.stdin)['credentials']['token'])")
+
+          SITE_ID=$(curl -s -X POST "https://us-east-1.online.tableau.com/api/3.22/auth/signin" \
+            -H "Content-Type: application/json" \
+            -H "Accept: application/json" \
+            -d "{\"credentials\":{\"personalAccessTokenName\":\"${{ secrets.TABLEAU_PAT_NAME }}\",\"personalAccessTokenSecret\":\"${{ secrets.TABLEAU_PAT_SECRET }}\",\"site\":{\"contentUrl\":\"camdenhomes\"}}}" \
+            | python3 -c "import sys,json; print(json.load(sys.stdin)['credentials']['site']['id'])")
+
+          # Fetch CSV data
+          curl -s "https://us-east-1.online.tableau.com/api/3.22/sites/$SITE_ID/views/96ea8597-9636-4176-bf36-b31c24613328/data" \
+            -H "X-Tableau-Auth: $TOKEN" -o tenant_data.csv
+
+          echo "Downloaded $(wc -l < tenant_data.csv) rows"
+
+      - name: Convert CSV to JSON
+        run: |
+          python3 -c "
+          import csv, json, datetime
+          rows = []
+          with open('tenant_data.csv', 'r', encoding='utf-8') as f:
+              reader = csv.DictReader(f)
+              for r in reader:
+                  bal = r.get('balance','0').replace(',','')
+                  try:
+                      bal = float(bal) if bal else 0
+                  except:
+                      bal = 0
+                  rows.append({
+                      'firstname': r.get('firstname',''),
+                      'lastname': r.get('lastname',''),
+                      'address': r.get('Property_street__C',''),
+                      'status': r.get('status',''),
+                      'balance': bal
+                  })
+          with open('data.json', 'w') as f:
+              json.dump({'updated': datetime.datetime.now(datetime.UTC).strftime('%Y-%m-%dT%H:%M:%SZ'), 'rows': rows}, f)
+          print(f'Wrote {len(rows)} rows to data.json')
+          "
+
+      - name: Commit and push updated data
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add data.json
+          git diff --staged --quiet || (git commit -m "Auto-refresh tenant data $(date -u +%Y-%m-%d)" && git push)

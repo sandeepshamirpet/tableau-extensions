@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tenant Balance Dashboard — Camden Homes</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f7f7f7;color:#222;font-size:13px}
+  .header{background:#1a3a5c;color:#fff;padding:12px 20px;display:flex;justify-content:space-between;align-items:center}
+  .header h1{font-size:16px;font-weight:600;letter-spacing:.02em}
+  .header span{font-size:11px;opacity:.7}
+  .body{padding:16px}
+  .kpi-row{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:16px}
+  .kpi{background:#fff;border-radius:8px;padding:12px 14px;border:1px solid #e5e5e5}
+  .kpi.primary{border-top:3px solid #1a6ab1}
+  .kpi.danger{border-top:3px solid #c0392b}
+  .kpi.warning{border-top:3px solid #e67e22}
+  .kpi-label{font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px}
+  .kpi-value{font-size:18px;font-weight:700;color:#1a3a5c}
+  .kpi-value.red{color:#c0392b}
+  .kpi-value.amber{color:#d68910}
+  .kpi-value.blue{color:#1a6ab1}
+  .kpi-sub{font-size:10px;color:#aaa;margin-top:3px}
+  .charts-row{display:grid;grid-template-columns:1.5fr 1fr;gap:12px;margin-bottom:14px}
+  .card{background:#fff;border-radius:8px;border:1px solid #e5e5e5;padding:14px}
+  .card-title{font-size:11px;font-weight:600;color:#555;text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px}
+  .filters{display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap}
+  .filters label{font-size:11px;color:#666}
+  select,input[type=text]{font-size:12px;padding:4px 8px;border:1px solid #ddd;border-radius:5px;background:#fff;color:#333}
+  input[type=text]{width:140px}
+  table{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed}
+  thead th{font-size:10px;font-weight:600;color:#888;text-align:left;padding:0 8px 8px;border-bottom:1px solid #eee;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap}
+  thead th.r{text-align:right}
+  tbody td{padding:8px 8px;border-bottom:1px solid #f0f0f0;color:#333;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  tbody td.r{text-align:right}
+  tbody tr:hover{background:#fafafa}
+  tbody tr:last-child td{border-bottom:none}
+  .badge{display:inline-block;font-size:10px;padding:2px 7px;border-radius:4px;font-weight:600}
+  .s-Current{background:#e8f5e9;color:#2e7d32}
+  .s-Eviction{background:#ffebee;color:#c62828}
+  .s-Notice{background:#fff8e1;color:#e65100}
+  .s-Past{background:#f5f5f5;color:#616161}
+  .s-Canceled{background:#fce4ec;color:#880e4f}
+  .s-Future{background:#e3f2fd;color:#1565c0}
+  .tfoot{font-size:11px;color:#aaa;text-align:right;margin-top:8px}
+  .legend{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:8px;font-size:11px;color:#666}
+  .legend span{display:flex;align-items:center;gap:4px}
+  .dot{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Yardi Tenant Balance — Executive Dashboard</h1>
+  <span id="asof">Camden Homes · Loading...</span>
+</div>
+
+<div class="body">
+  <div class="kpi-row">
+    <div class="kpi primary">
+      <div class="kpi-label">Current tenants balance</div>
+      <div class="kpi-value blue" id="kCurrent">—</div>
+      <div class="kpi-sub" id="kCurrentSub"></div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Total outstanding</div>
+      <div class="kpi-value" id="kTotal">—</div>
+      <div class="kpi-sub">all statuses with balance</div>
+    </div>
+    <div class="kpi danger">
+      <div class="kpi-label">Eviction balances</div>
+      <div class="kpi-value red" id="kEviction">—</div>
+      <div class="kpi-sub" id="kEvSub"></div>
+    </div>
+    <div class="kpi warning">
+      <div class="kpi-label">Notice balances</div>
+      <div class="kpi-value amber" id="kNotice">—</div>
+      <div class="kpi-sub" id="kNoticeSub"></div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Past tenant balances</div>
+      <div class="kpi-value" id="kPast">—</div>
+      <div class="kpi-sub" id="kPastSub"></div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Avg balance</div>
+      <div class="kpi-value" id="kAvg">—</div>
+      <div class="kpi-sub">per tenant with balance</div>
+    </div>
+  </div>
+
+  <div class="charts-row">
+    <div class="card">
+      <div class="card-title">Top 15 balances</div>
+      <div class="legend">
+        <span><span class="dot" style="background:#378ADD"></span>Current</span>
+        <span><span class="dot" style="background:#E24B4A"></span>Eviction</span>
+        <span><span class="dot" style="background:#EF9F27"></span>Notice</span>
+        <span><span class="dot" style="background:#888780"></span>Past</span>
+      </div>
+      <div style="position:relative;width:100%;height:260px"><canvas id="barChart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Balance by status</div>
+      <div style="position:relative;width:100%;height:290px"><canvas id="donutChart"></canvas></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title" style="margin-bottom:10px">Tenant balance detail</div>
+    <div class="filters">
+      <label>Search:</label>
+      <input type="text" id="srch" placeholder="Name or address" oninput="render()">
+      <label>Status:</label>
+      <select id="statFilter" onchange="render()">
+        <option value="all">All statuses</option>
+        <option value="Current">Current</option>
+        <option value="Eviction">Eviction</option>
+        <option value="Notice">Notice</option>
+        <option value="Past">Past</option>
+        <option value="Canceled">Canceled</option>
+        <option value="Future">Future</option>
+      </select>
+      <label>Show:</label>
+      <select id="balFilter" onchange="render()">
+        <option value="pos">With balance (&gt;$0)</option>
+        <option value="all">All tenants</option>
+        <option value="neg">Credits only</option>
+      </select>
+    </div>
+    <table>
+      <thead><tr>
+        <th style="width:20%">Tenant</th>
+        <th style="width:32%">Address</th>
+        <th style="width:13%">Status</th>
+        <th class="r" style="width:15%">Balance</th>
+      </tr></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+    <div class="tfoot" id="tfoot"></div>
+  </div>
+</div>
+
+<script>
+let rows = [];
+let bar, donut;
+const fmt = v => (v < 0 ? '-$' : '$') + Math.abs(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const SC = { Current: '#378ADD', Eviction: '#E24B4A', Notice: '#EF9F27', Past: '#888780', Canceled: '#D4537E', Future: '#97C459' };
+const sum = arr => arr.reduce((s, r) => s + r.bal, 0);
+const $k = v => '$' + Math.round(v).toLocaleString();
+
+async function loadData() {
+  try {
+    const resp = await fetch('data.json?t=' + Date.now());
+    const json = await resp.json();
+    rows = json.rows.map(r => ({
+      name: (r.firstname + ' ' + r.lastname).trim(),
+      addr: r.address || '',
+      status: r.status || '',
+      bal: r.balance || 0
+    }));
+    const updated = new Date(json.updated);
+    document.getElementById('asof').textContent = 'Camden Homes \u00b7 Data as of ' + updated.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+    updateDashboard();
+  } catch (err) {
+    document.getElementById('asof').textContent = 'Error loading data: ' + err.message;
+  }
+}
+
+function updateDashboard() {
+  const pos = rows.filter(r => r.bal > 0);
+  const cur = pos.filter(r => r.status === 'Current');
+  const ev = pos.filter(r => r.status === 'Eviction');
+  const nt = pos.filter(r => r.status === 'Notice');
+  const ps = pos.filter(r => r.status === 'Past');
+
+  document.getElementById('kCurrent').textContent = $k(sum(cur));
+  document.getElementById('kCurrentSub').textContent = cur.length + ' current tenants with balance';
+  document.getElementById('kTotal').textContent = $k(sum(pos));
+  document.getElementById('kEviction').textContent = $k(sum(ev));
+  document.getElementById('kEvSub').textContent = ev.length + ' tenants in eviction';
+  document.getElementById('kNotice').textContent = $k(sum(nt));
+  document.getElementById('kNoticeSub').textContent = nt.length + ' tenants on notice';
+  document.getElementById('kPast').textContent = $k(sum(ps));
+  document.getElementById('kPastSub').textContent = ps.length + ' past tenants';
+  document.getElementById('kAvg').textContent = pos.length > 0 ? '$' + Math.round(sum(pos) / pos.length).toLocaleString() : '$0';
+
+  buildCharts(pos);
+  render();
+}
+
+function buildCharts(pos) {
+  const top15 = [...pos].sort((a, b) => b.bal - a.bal).slice(0, 15);
+  if (bar) bar.destroy();
+  bar = new Chart(document.getElementById('barChart'), {
+    type: 'bar',
+    data: {
+      labels: top15.map(r => r.name.length > 18 ? r.name.slice(0, 17) + '\u2026' : r.name),
+      datasets: [{ data: top15.map(r => Math.round(r.bal)), backgroundColor: top15.map(r => SC[r.status] || '#888'), borderRadius: 3 }]
+    },
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ' $' + ctx.raw.toLocaleString() + ' (' + top15[ctx.dataIndex].status + ')' } } },
+      scales: { x: { grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { callback: v => '$' + Math.round(v / 1000) + 'k', font: { size: 10 } } }, y: { grid: { display: false }, ticks: { font: { size: 10 } } } }
+    }
+  });
+
+  const st = {};
+  pos.forEach(r => { st[r.status] = (st[r.status] || 0) + r.bal; });
+  const sk = Object.keys(st).sort((a, b) => st[b] - st[a]);
+  if (donut) donut.destroy();
+  donut = new Chart(document.getElementById('donutChart'), {
+    type: 'doughnut',
+    data: {
+      labels: sk.map(k => k + ' ($' + Math.round(st[k] / 1000) + 'k)'),
+      datasets: [{ data: sk.map(k => Math.round(st[k])), backgroundColor: sk.map(k => SC[k] || '#888'), borderWidth: 0, hoverOffset: 4 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: '55%',
+      plugins: {
+        legend: { display: true, position: 'bottom', labels: { font: { size: 11 }, padding: 8, boxWidth: 10, boxHeight: 10 } },
+        tooltip: { callbacks: { label: ctx => ' $' + ctx.raw.toLocaleString() } }
+      }
+    }
+  });
+}
+
+function render() {
+  const s = document.getElementById('srch').value.toLowerCase();
+  const sf = document.getElementById('statFilter').value;
+  const bf = document.getElementById('balFilter').value;
+  let d = rows.filter(r => {
+    if (bf === 'pos' && r.bal <= 0) return false;
+    if (bf === 'neg' && r.bal >= 0) return false;
+    if (sf !== 'all' && r.status !== sf) return false;
+    if (s && !r.name.toLowerCase().includes(s) && !r.addr.toLowerCase().includes(s)) return false;
+    return true;
+  }).sort((a, b) => b.bal - a.bal);
+  const sh = d.slice(0, 300);
+  document.getElementById('tbody').innerHTML = sh.map(r => `<tr>
+    <td style="font-weight:600">${r.name}</td>
+    <td style="color:#777">${r.addr || '\u2014'}</td>
+    <td><span class="badge s-${r.status}">${r.status}</span></td>
+    <td class="r" style="font-weight:600">${fmt(r.bal)}</td>
+  </tr>`).join('');
+  document.getElementById('tfoot').textContent = sh.length < d.length ? `Showing ${sh.length} of ${d.length} results` : `${d.length} tenants`;
+}
+
+loadData();
+</script>
+</body>
+</html>
