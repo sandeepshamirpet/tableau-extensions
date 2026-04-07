@@ -44,16 +44,22 @@ jobs:
               reader = csv.DictReader(f)
               for r in reader:
                   bal = r.get('balance','0').replace(',','')
+                  rent = r.get('Rent','0').replace(',','')
                   try:
                       bal = float(bal) if bal else 0
                   except:
                       bal = 0
+                  try:
+                      rent = float(rent) if rent else 0
+                  except:
+                      rent = 0
                   rows.append({
                       'firstname': r.get('firstname',''),
                       'lastname': r.get('lastname',''),
                       'address': r.get('Property_street__C',''),
                       'status': r.get('status',''),
-                      'balance': bal
+                      'balance': bal,
+                      'rent': rent
                   })
           with open('data.json', 'w') as f:
               json.dump({'updated': datetime.datetime.now(datetime.UTC).strftime('%Y-%m-%dT%H:%M:%SZ'), 'rows': rows}, f)
