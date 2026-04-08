@@ -2,8 +2,8 @@ name: Refresh Tableau Data
 
 on:
   schedule:
-    - cron: '0 6,12,18,0 * * *'  # Every 6 hours (UTC)
-  workflow_dispatch:  # Manual trigger
+    - cron: '0 6,12,18,0 * * *'
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -11,60 +11,85 @@ permissions:
 jobs:
   refresh:
     runs-on: ubuntu-latest
+    env:
+      TABLEAU_PAT_NAME: ${{ secrets.TABLEAU_PAT_NAME }}
+      TABLEAU_PAT_SECRET: ${{ secrets.TABLEAU_PAT_SECRET }}
     steps:
       - uses: actions/checkout@v4
 
-      - name: Sign in to Tableau and fetch data
+      - name: Fetch data from Tableau and build JSON
         run: |
+          python3 << 'PYEOF'
+          import urllib.request, json, csv, io, datetime, os
+
+          pat_name = os.environ["TABLEAU_PAT_NAME"]
+          pat_secret = os.environ["TABLEAU_PAT_SECRET"]
+
           # Authenticate
-          TOKEN=$(curl -s -X POST "https://us-east-1.online.tableau.com/api/3.22/auth/signin" \
-            -H "Content-Type: application/json" \
-            -H "Accept: application/json" \
-            -d "{\"credentials\":{\"personalAccessTokenName\":\"${{ secrets.TABLEAU_PAT_NAME }}\",\"personalAccessTokenSecret\":\"${{ secrets.TABLEAU_PAT_SECRET }}\",\"site\":{\"contentUrl\":\"camdenhomes\"}}}" \
-            | python3 -c "import sys,json; print(json.load(sys.stdin)['credentials']['token'])")
+          auth_payload = json.dumps({
+              "credentials": {
+                  "personalAccessTokenName": pat_name,
+                  "personalAccessTokenSecret": pat_secret,
+                  "site": {"contentUrl": "camdenhomes"}
+              }
+          }).encode()
 
-          SITE_ID=$(curl -s -X POST "https://us-east-1.online.tableau.com/api/3.22/auth/signin" \
-            -H "Content-Type: application/json" \
-            -H "Accept: application/json" \
-            -d "{\"credentials\":{\"personalAccessTokenName\":\"${{ secrets.TABLEAU_PAT_NAME }}\",\"personalAccessTokenSecret\":\"${{ secrets.TABLEAU_PAT_SECRET }}\",\"site\":{\"contentUrl\":\"camdenhomes\"}}}" \
-            | python3 -c "import sys,json; print(json.load(sys.stdin)['credentials']['site']['id'])")
+          req = urllib.request.Request(
+              "https://us-east-1.online.tableau.com/api/3.22/auth/signin",
+              data=auth_payload,
+              headers={"Content-Type": "application/json", "Accept": "application/json"}
+          )
 
-          # Fetch CSV data
-          curl -s "https://us-east-1.online.tableau.com/api/3.22/sites/$SITE_ID/views/96ea8597-9636-4176-bf36-b31c24613328/data" \
-            -H "X-Tableau-Auth: $TOKEN" -o tenant_data.csv
+          try:
+              resp = urllib.request.urlopen(req)
+              creds = json.loads(resp.read())["credentials"]
+              token = creds["token"]
+              site_id = creds["site"]["id"]
+              print(f"Authenticated successfully. Site ID: {site_id}")
+          except Exception as e:
+              print(f"Auth failed: {e}")
+              # Write empty but valid JSON so the page doesn't break
+              with open("data.json", "w") as f:
+                  json.dump({"updated": datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%SZ"), "rows": [], "error": str(e)}, f)
+              exit(1)
 
-          echo "Downloaded $(wc -l < tenant_data.csv) rows"
+          # Fetch view data
+          view_id = "96ea8597-9636-4176-bf36-b31c24613328"
+          data_req = urllib.request.Request(
+              f"https://us-east-1.online.tableau.com/api/3.22/sites/{site_id}/views/{view_id}/data",
+              headers={"X-Tableau-Auth": token}
+          )
+          resp = urllib.request.urlopen(data_req)
+          csv_text = resp.read().decode("utf-8")
 
-      - name: Convert CSV to JSON
-        run: |
-          python3 -c "
-          import csv, json, datetime
+          # Parse CSV
+          reader = csv.DictReader(io.StringIO(csv_text))
           rows = []
-          with open('tenant_data.csv', 'r', encoding='utf-8') as f:
-              reader = csv.DictReader(f)
-              for r in reader:
-                  bal = r.get('balance','0').replace(',','')
-                  rent = r.get('Rent','0').replace(',','')
-                  try:
-                      bal = float(bal) if bal else 0
-                  except:
-                      bal = 0
-                  try:
-                      rent = float(rent) if rent else 0
-                  except:
-                      rent = 0
-                  rows.append({
-                      'firstname': r.get('firstname',''),
-                      'lastname': r.get('lastname',''),
-                      'address': r.get('Property_street__C',''),
-                      'status': r.get('status',''),
-                      'balance': bal,
-                      'rent': rent
-                  })
-          with open('data.json', 'w') as f:
-              json.dump({'updated': datetime.datetime.now(datetime.UTC).strftime('%Y-%m-%dT%H:%M:%SZ'), 'rows': rows}, f)
-          print(f'Wrote {len(rows)} rows to data.json')
-          "
+          for r in reader:
+              bal = r.get("balance", "0").replace(",", "")
+              rent = r.get("Rent", "0").replace(",", "")
+              try:
+                  bal = float(bal) if bal else 0
+              except:
+                  bal = 0
+              try:
+                  rent = float(rent) if rent else 0
+              except:
+                  rent = 0
+              rows.append({
+                  "firstname": r.get("firstname", ""),
+                  "lastname": r.get("lastname", ""),
+                  "address": r.get("Property_street__C", ""),
+                  "status": r.get("status", ""),
+                  "balance": bal,
+                  "rent": rent
+              })
+
+          with open("data.json", "w") as f:
+              json.dump({"updated": datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%SZ"), "rows": rows}, f)
+
+          print(f"Wrote {len(rows)} rows to data.json")
+          PYEOF
 
       - name: Commit and push updated data
         run: |
